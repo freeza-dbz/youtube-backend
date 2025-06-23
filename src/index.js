@@ -7,7 +7,7 @@ dotenv.config({
 });
 
 connectdb()
-.then(() => {dcdc
+.then(() => {
   app.on("error", (err) => {
       console.log("ERROR: ", err)
       throw err 
