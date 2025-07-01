@@ -9,7 +9,7 @@ const asyncHandler = (requestHandler) => {
 export { asyncHandler }
 
 // const asyncHandler = () => { }
-// const asyncHandler = (func) => { () => { } } // cn skip the use of second curly bracket
+// const asyncHandler = (func) => { () => { } } // can skip the use of second curly bracket
 // const asyncHandler = (func) => async () => { }
 
 
