@@ -1,5 +1,5 @@
 const asyncHandler = (requestHandler) => {
-  (req, res, next) => {
+  return (req, res, next) => {
     Promise
       .resolve(requestHandler(req, res, next))
       .catch((err) => next(err))
@@ -7,6 +7,26 @@ const asyncHandler = (requestHandler) => {
 }
 
 export { asyncHandler }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//when using async handler if an reeoe occur (like a rejected promise) express dosen't catches itself so we have to uuse try and catch
+//this code wrap here helps to prevent the writing of try catch block everywhere 
 
 // const asyncHandler = () => { }
 // const asyncHandler = (func) => { () => { } } // can skip the use of second curly bracket
