@@ -1,6 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/ApiError.js"
-import { User } from "../models/user.model.js"
+import { ApiError } from "../utils/ApiErrors.js"
+import { User } from "../modules/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 
@@ -61,7 +61,7 @@ const registerUser = asyncHandler(async (req, res) => {
     username: username.toLowerCase()
   })
 
-  const createdUser = await User.findById(user._id).select( //mongodb automatically adds _id field with ebery entry in db
+  const createdUser = await User.findById(user._id).select( //mongodb automatically adds _id field with every entry in db
     //select by default selects all the fields so we have to remove the undesired fields from the object as done below
     "-password -refreshToken"
   )
