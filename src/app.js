@@ -1,7 +1,6 @@
 import express from "express"
 import cookieParser from "cookie-parser"
 import cors from "cors" // Cross-Origin Resource Sharing
-
 const app = express()
 
 app.use(cors({

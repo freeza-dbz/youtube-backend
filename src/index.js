@@ -1,15 +1,15 @@
-import mongoose from "mongoose";
-import { DB_NAME } from "./constants.js";
+// import mongoose from "mongoose";
+// import { DB_NAME } from "./constants.js";
 import connectdb from "./db/index.js";
-import express from "express"
-import dotenv from "dotenv";
+// import express from "express"
+// import dotenv from "dotenv";
+// dotenv.config({
+//   path: "../.env"
+// });y
 import { app } from "./app.js";
-dotenv.config({
-  path: "../.env"
-});
 
 
-connectdb()
+await connectdb()
 .then(() => {
   app.on("error", (err) => {
       console.log("ERROR: ", err)
