@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiErrors.js"
 import { User } from "../modules/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { log } from "console";
 
 
 
@@ -17,6 +18,8 @@ const registerUser = asyncHandler(async (req, res) => {
   //check for user creation 
   //return response
 
+
+  // console.log(req.body);
   const { fullName, email, username, password } = req.body
   //console.log("email: ", email);
 
@@ -37,7 +40,17 @@ const registerUser = asyncHandler(async (req, res) => {
   //console.log(req.files);
 
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  //when coverImage[0] is not available then this chaining gives undefined rather than error which leads to error of 
+  //CANNOT READ UNDEFINED or any of that type thats why we need to do this type of checking in case of avatar we cannot 
+  //procced without it so normal if is enough we could have applied that if here to but no worries different types of checking GOOD LEARNING   
+  
+
+  let coverImageLocalPath
+  //Array.isArray(req.files.coverImage checking if the array is of coverimage or something like that DO read about this
+  if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+    coverImageLocalPath = req.files.coverImage[0].path
+  }
 
 
   if (!avatarLocalPath) {
