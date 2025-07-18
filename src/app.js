@@ -11,7 +11,7 @@ app.use(cors({
 app.use(express.json({ limit: "16kb" })) //to take data in json format
 app.use(express.urlencoded({ extended: true, limit: "16kb" })) //to take data from url format read in extended format extend controls how nested object in data are to be parsed 
 app.use(express.static("public")) //will store all the assets in public folder like img, pdf, favicon
-app.use(cookieParser()) //to place secure cookie in user browser using our server
+app.use(cookieParser()) //to place secure cookie in user browser using our server also gives access of req.cookies
 
 //routes import
 

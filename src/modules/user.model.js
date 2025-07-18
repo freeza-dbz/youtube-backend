@@ -59,8 +59,8 @@ userSchema.pre("save", async function (next) { // Encrypting password just befor
 })
 
 userSchema.methods.isPasswordCorrect = async function (password) { // Checking if passwrod is in correct format by making a new method 
-  return await bcrypt.compare(password, this.password) // returns true or false
-}
+  return await bcrypt.compare(password, this.password)//this.password is the saved password of user and password is the pasword sent during logging in
+}// returns true or false
 
 userSchema.methods.generateAccessToken = function () {
   jwt.sign({
