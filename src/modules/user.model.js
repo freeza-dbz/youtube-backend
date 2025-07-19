@@ -62,24 +62,26 @@ userSchema.methods.isPasswordCorrect = async function (password) { // Checking i
   return await bcrypt.compare(password, this.password)//this.password is the saved password of user and password is the pasword sent during logging in
 }// returns true or false
 
+
 userSchema.methods.generateAccessToken = function () {
-  jwt.sign({
+  return jwt.sign({
     _id: this._id,
-    emai: this.email,
+    email: this.email,
     username: this.username,
     fullName: this.fullName
   },
-    process.env.ACCESS_TOKEN_SCERET,
+    process.env.ACCESS_TOKEN_SECRET,
     {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
     })
 }
 
+
 userSchema.methods.generateRefreshToken = function () {
-  jwt.sign({
+  return jwt.sign({
     _id: this._id,
   },
-    process.env.REFRESH_TOKEN_SCERET,
+    process.env.REFRESH_TOKEN_SECRET,
     {
       expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
     })

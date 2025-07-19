@@ -3,23 +3,26 @@ import { ApiError } from "../utils/ApiErrors.js"
 import { User } from "../modules/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken"
 
-const generateAccessandRefreshToken = async (userId) => {
+
+//GENERATING TOKENS
+const generateAccessAndRefereshTokens = async (userId) => {
   try {
-    const user = User.findById(userId)
-    const AccessToken = generateAccessToken()
-    const RefreshToken = generateRefreshToken()
+    const user = await User.findById(userId)
+    const accessToken = user.generateAccessToken()
+    const refreshToken = user.generateRefreshToken()
 
-    user.refreshToken = RefreshToken
-    await user.schemaLevelProjections({ validateBeforeSave: false })
+    user.refreshToken = refreshToken
+    await user.save({ validateBeforeSave: false })
 
-    return { AccessToken, RefreshToken }
+    return { accessToken, refreshToken }
+
 
   } catch (error) {
-    throw new ApiError(500, "Something went wrong while generating Tokens")
+    throw new ApiError(500, error.message || "Something went wrong while generating tokens")
   }
 }
-
 
 //REGISTERING USER
 const registerUser = asyncHandler(async (req, res) => {
@@ -103,7 +106,7 @@ const registerUser = asyncHandler(async (req, res) => {
   )
 
 })
- 
+
 // LOGGING IN
 const loginUser = asyncHandler(async (req, res) => {
   //req.body -> data
@@ -116,7 +119,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const { email, username, password } = req.body
 
-  if (!username || !email) {
+  if (!username && !email) {
     throw new ApiError(400, "Username or email is required")
   }
 
@@ -134,7 +137,7 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid user credentials")
   }
 
-  const { AccessToken, RefreshToken } = await generateAccessandRefreshToken(user._id)
+  const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id)
   //we have generated tokens after calling for user from database SO now we can eithe update our user or can hit another database querry 
   //this is the choice of developer completely as hitting database querry is a expensive operation updating is not so developer call
 
@@ -142,30 +145,101 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const options = { //these are security options reda on gpt about more of these types 
     httpOnly: true,
+    secure: true,
+
+  }
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200, {
+        user: LoggedInUser, accessToken, refreshToken // we are sending tokens here because if user is wanting to store tokens on local storage, or he just wants to save he tokens depends on requirement of the project
+      },
+        "User LoggedIn Successfully"
+      )
+    )
+
+
+})
+
+//LOGGING OUT
+const logoutUser = asyncHandler(async (req, res) => {
+  //here we dont have instance of user because we dont take email or username during logging out so we cannot use findone to find user as done above
+  //now in vrifyJWT middleware we are adding req.user in user which now gives us the access of req.user here 
+
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: { //mongoDB operator give the changes to be done
+        refreshToken: undefined
+      }
+    },
+    {
+      new: true//updates the user
+    }
+  )
+
+  const options = {
+    httpOnly: true,
     secure: true
   }
 
   return res
-  .status(200)
-  .cookie("Access Token", AccessToken, options)
-  .cookie("Refresh Token", RefreshToken, options)
-  .json(
-    new ApiResponse(
-      200,{
-        user: LoggedInUser, AccessToken, RefreshToken // we are sending tokens here because if user is wanting to store tokens on local storage, or he just wants to save he tokens depends on requirement of the project
-      },
-      "User LoggedIn Successfully"
-    )
-  )
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json({ "Status Code": 200, "Data": {}, "Message": "User Logged out " })
 
 
 })
 
+//Token Play
+const refreshaccessToken = asyncHandler(async (req, res) => {
+  const IncomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
-//LOGGING OUT
-const logoutUser = asyncHandler(async(req, res) => {
-  //here we dont have instance of user because we dont take email or username during logging out so we cannot use findone to find user as done above
-  
+  if (!IncomingRefreshToken) {
+    throw new ApiError(401, "Unauthorized Request")
+  }
+
+  try {
+    const decodedToken = jwt.verify(IncomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
+
+    const user = await User.findById(decodedToken?._id)
+
+    if (!user) {
+      throw new ApiError(401, "Invalid Refresh Token")
+    }
+
+    if (IncomingRefreshToken !== user?.refreshToken) { // comparing token from db and incoming
+      throw new ApiError(401, "Refresh token expired or used")
+    }
+
+    const options = {
+      httpOnly: true,
+      secure: true
+    }
+
+    const { accessToken, NewRefreshToken } = await generateAccessAndRefereshTokens(user._id)
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", NewRefreshToken, options)
+      .json(
+        new ApiResponse(
+          200, {
+          accessToken, refreshToken: NewRefreshToken
+        },
+          "Access token refreshed"
+        )
+      )
+  } catch (error) {
+    throw new ApiError(401, error.message || "Invalid Refresh Token")
+  }
+
 })
 
-export { registerUser, loginUser }
+export { registerUser, loginUser, logoutUser, refreshaccessToken }
