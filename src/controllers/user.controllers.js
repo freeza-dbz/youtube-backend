@@ -101,13 +101,19 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Something went wrong while registering the user")
   }
 
-  return res.status(201).json(
-    new ApiResponse(200, createdUser, "User registered Successfully")
-  )
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(
+        200,
+        createdUser,
+        "User registered Successfully"
+      )
+    )
 
 })
 
-// LOGGING IN
+//LOGGING IN
 const loginUser = asyncHandler(async (req, res) => {
   //req.body -> data
   //login via username or email
@@ -191,7 +197,10 @@ const logoutUser = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
-    .json({ "Status Code": 200, "Data": {}, "Message": "User Logged out " })
+    .json(new ApiResponse(
+      200,
+      {},
+      "User Logged out"))
 
 
 })
@@ -242,4 +251,165 @@ const refreshaccessToken = asyncHandler(async (req, res) => {
 
 })
 
-export { registerUser, loginUser, logoutUser, refreshaccessToken }
+//Change Password
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+
+  const { oldPasword, newPassword } = req.body
+
+  const user = User.findById(req.user?._id)// because we will run auth midddleware taht is why we have access of req.user
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPasword)
+
+  if (!isPasswordCorrect) {
+    throw new ApiError(401, "Invalid Old Password")
+  }
+
+  user.password = newPassword
+  await user.save({ validateBeforeSave: false })
+
+  return res
+    .status(200)
+    .json(new ApiResponse(
+      200,
+      {},
+      "Password changed successfully"
+    )
+    )
+
+
+})
+
+//Fetching current user
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(
+      200,
+      req.user,
+      "Current User fetched successfully"
+    )
+    )
+})
+
+//Updating Account Details
+const updateDetails = asyncHandler(async (req, res) => {
+
+  const { fullName, email } = req.body
+  //PROFESSIONAL ADVICE if you want to update any file like coverImage or avatar do this with a new handler because if 
+  //we go for a option of updating image only here then again and again text data { email and fullName } will be sended
+  //every time we hit the endpoint SO there we will first use multer middleware so that we can acept files and secondly 
+  //auth middleware as only loggedin user can only update files HEHEHEHE 
+
+  if (!fullName || !email) {
+    throw new ApiError(401, "All fields are required")
+  }
+
+  const user = User.findByIdAndUpdate(req.user?._id,
+    {
+      $set: {
+        fullName,
+        email
+      }
+    },
+    {
+      new: true //this will save the updated user 
+    })
+    .select("-password")
+
+  return res
+    .status(200)
+    .json(new ApiResponse(
+      200,
+      user,
+      "User Details Updated Successfully"
+    )
+    )
+
+})
+
+//Updating Avatar
+const updateAvatar = asyncHandler(async (req, res) => {
+
+  const avatarLocalFile = req.file?.path //req.file is a option from multer not files because we are not having multiple files
+
+  if (!avatarLocalFile) {
+    throw new ApiError(400, "Avatar file is required")
+  }
+
+  const avatar = uploadOnCloudinary(avatarLocalFile)
+
+  if (!avatar.url) {
+    throw new ApiError(400, "Error while updating avatar on cloudinary")
+  }
+
+  User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url
+      }
+    },
+    {
+      new: true
+    }
+  ).select("-password")
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200, user, "Avatar updated successfully"
+      )
+    )
+
+})
+
+//Updating Cover Image
+const updateCoverImage = asyncHandler(async (req, res) => {
+
+  const coverImageLocalFile = req.file?.path //req.file is a option from multer not files because we are not having multiple files
+
+  if (!coverImageLocalFile) {
+    throw new ApiError(400, "Avatar file is required")
+  }
+
+  const coverImage = uploadOnCloudinary(coverImageLocalFile)
+
+  if (!coverImage.url) {
+    throw new ApiError(400, "Error while updating Cover Image on cloudinary")
+  }
+
+  User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImage: coverImage.url
+      }
+    },
+    {
+      new: true
+    }
+  ).select("-password")
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200, user, "Cover Image updated successfully"
+      )
+    )
+
+})
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshaccessToken,
+  changeCurrentPassword,
+  changeCurrentPassword,
+  getCurrentUser,
+  updateDetails,
+  updateAvatar,
+  updateCoverImage,
+
+}

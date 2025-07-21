@@ -22,6 +22,7 @@ router.route("/register").post(
 router.route("/login").post(loginUser)
 
 //secured routes: routes which run in login condition
+
 router.route("/logout").post(verifyJWT, logoutUser)
 
 router.route("/refresh-token").post(refreshaccessToken)
