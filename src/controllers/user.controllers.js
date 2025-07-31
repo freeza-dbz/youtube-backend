@@ -303,7 +303,7 @@ const updateDetails = asyncHandler(async (req, res) => {
     throw new ApiError(401, "All fields are required")
   }
 
-  const user = User.findByIdAndUpdate(req.user?._id,
+  const user = await User.findByIdAndUpdate(req.user?._id,
     {
       $set: {
         fullName,
@@ -341,7 +341,7 @@ const updateAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Error while updating avatar on cloudinary")
   }
 
-  User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
@@ -378,7 +378,7 @@ const updateCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Error while updating Cover Image on cloudinary")
   }
 
-  User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
@@ -397,6 +397,84 @@ const updateCoverImage = asyncHandler(async (req, res) => {
         200, user, "Cover Image updated successfully"
       )
     )
+
+})
+
+//Channel Proflie
+const getChannelProfile = asyncHandler(async (req, res) => {
+
+  const { username } = req.params
+
+  if (!username?.trim()) {
+    throw new ApiError(400, "Username is missing")
+  }
+
+  //channel is also a user, a user which have both subscribers to his cahnnel and he subscribed to different channels
+  const channel = await User.aggregate([
+    {
+      $match: { //finding the channel whose querry is being sent like i want to know about dp
+        username: username?.toLowerCase()
+      }
+    },
+    {
+      $lookup: { //finding those documents in which we have a dp id in channel subscribed
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "Subscribers"
+      }
+    },
+    {
+      $lookup: { //finding all those channel whom dp has subscribed to
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "SubscribedTo"
+      }
+    },
+    { //counting
+      $addFields: {
+        subscriberCount: {
+          $size: "$Subscribers"
+        },
+        subscribedToCount: {
+          $size: "$SubscribedTo"
+        },//https://www.youtube.com/watch?v=fDTf1mk-jQg&list=PLu71SKxNbfoBGh_8p_NS-ZAh6v7HhYqHW&index=20 watch here at 25 min 
+        isSubscribed: {
+          $cond: {
+            if: {
+              $in: [req.user?._id, "$Subscribers.subscriber"],
+              then: true,
+              else: false
+            }
+          }
+        }
+      }
+    },
+    {
+      $project: {
+        fullName: 1,
+        username: 1,
+        subscriberCount: 1,
+        subscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1
+      }
+    }
+  ])
+  //console.log(channel) do this surely
+
+  if (!channel?.length) {
+    throw new ApiError(404, "Channel does not exist")
+  }
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(200, channel[0], "Channel fetched successfully    ")
+  )
 
 })
 
