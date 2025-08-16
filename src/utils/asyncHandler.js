@@ -25,7 +25,7 @@ export { asyncHandler }
 
 
 
-//when using async handler if an reeoe occur (like a rejected promise) express dosen't catches itself so we have to uuse try and catch
+//when using async handler if an error occur (like a rejected promise) express dosen't catches itself so we have to uuse try and catch
 //this code wrap here helps to prevent the writing of try catch block everywhere 
 
 // const asyncHandler = () => { }
